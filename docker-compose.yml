@@ -1,0 +1,33 @@
+version: '3.8'
+
+# =============================================================================
+# ARQUITECTURA DISTRIBUIDA: INSTANCIA AWS EC2 5 - KAFKA ANATYTICS & ADMIN SERVICE
+# IP Elástica Asignada: 34.231.210.120
+# Se conecta al Clúster Kafka remoto en 54.84.199.244 (Instancia 4)
+# =============================================================================
+
+services:
+  kafka-analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pedidos360-kafka-analytics
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      # Conexión al Clúster Kafka en Instancia 4
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-54.84.199.244:9092,54.84.199.244:9093}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP:-pedidos360-analytics-group}
+
+      # Orígenes CORS permitidos (Frontend Angular y AWS API Gateway)
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200,https://ia40qji33e.execute-api.us-east-1.amazonaws.com,http://52.204.44.178,https://52.204.44.178}
+
+      # Optimización JVM para t3.small
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:+UseG1GC"
+    networks:
+      - analytics-net
+
+networks:
+  analytics-net:
+    driver: bridge

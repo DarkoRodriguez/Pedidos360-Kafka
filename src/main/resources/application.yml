@@ -1,0 +1,53 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: kafka-analytics-service
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:pedidos360-analytics-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+    listener:
+      auto-startup: ${KAFKA_CONSUMER_AUTO_START:true}
+      missing-topics-fatal: false
+
+    # Configuración de Kafka Streams para analítica en tiempo real de los 20 locales
+    streams:
+      application-id: pedidos360-streams-analytics-v3
+      auto-startup: ${KAFKA_STREAMS_AUTO_START:true}
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.dsl.store: in_memory
+        commit.interval.ms: 1000
+        cache.max.bytes.buffering: 10485760 # 10MB cache (optimizado para instancia t3.small)
+        num.stream.threads: 1
+        state.dir: /tmp/kafka-streams-analytics-v3
+        auto.offset.reset: earliest
+        spring.json.trusted.packages: "*"
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4201,https://ia40qji33e.execute-api.us-east-1.amazonaws.com}
+  kafka:
+    topics:
+      ventas: "pedidos-ventas"
+      ventas-dlt: "pedidos-ventas.DLT"
+      metricas-locales: "pedidos-metricas-locales"
+      alertas-stock: "pedidos-alertas-stock"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
